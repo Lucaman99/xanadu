@@ -20,9 +20,6 @@ has been done on the possibility of using it as a robust variational algorithm t
 achieve quantum supremacy on NISQ devices. As 
 a result, researchers are interested in performing calculations and simulations of different 
 QAOA experiments on classical computers.
-\newline\newline
-\noindent
-This ADR was written by Jack Ceroni, with extensive assistance from Juan Miguel Arrazola.
 
 \subsection{Background}
 
@@ -37,9 +34,16 @@ There are four main components that are necessary to defining a QAOA workflow:
 	\item Defining a diagonal cost Hamiltonian
 	\item Allowing the user to define a mixer layer
 	\item Creating a cost layer and combining it with the mixer and pre-processing 
-	      to create a variational circuiit
+	      to create a variational circuit
       	\item Post-processing of results 
 \end{enumerate}
+\noindent
+This ADR will disucss each in detail.
+\newline\newline
+The main goal of the QAOA module is to make it as \textbf{problem-centric} as possible. 
+We want for the user to be able to enter some combinatorial problem into PennyLane, and 
+in return, get the answer without worrying too much about the specifics of the quantum 
+circuits that are being executed in the backend.
 
 \subsubsection{Cost Hamiltonians}
 
@@ -56,13 +60,30 @@ they wish to minimize. This can be done in two ways:
 		      \item QUBO (for a user-defined Ising model)
 		\end{itemize}
 \end{enumerate}
-   
+  \noindent 
    After the core functionality has been built, more built-in cost Hamiltonians 
    corresponding to other common optimization problems can be added.
 
 \subsubsection{Mixer Layers}
 
-The user must also have the ability to specify
+The user must also have the ability to specify a mixer Hamiltonian to be used 
+in the QAOA workflow.
+\newline\newline
+\noindent
+Mixers could be defined in a similar way to the QAOA problem instances.
+The user can either define their own function, containing PennyLane operations, which 
+can be used as the mixer layer, or they can choose from a variety of built-in mixers.
+To begin, we propose the following mixers \textbf{unitaries} are implemented:
+
+\begin{itemize}
+	\item The $RX$ mixer
+	\item The $XY$ mixer
+	\item The Hamming weight-preserving generalized SWAP mixer, defined as:
+		$$\exp \Big[ - \frac{\beta}{2} (X_{i} X_{j} \ + \ Y_{i} Y_{j}) \Big]$$
+\end{itemize}
+
+With these unitaries defined, \textbf{broadcasted} to the circuit 
+using the PennyLane broadcast function.
 
 \subsubsection{Code Structure}
 
@@ -76,7 +97,7 @@ be instances of this "Problem" class with the following attributes:
 	   \item The cost layer. With knowledge of the cost Hamiltonian, the cost 
    		 layer can be constructed.
 	   \item A \textit{recommended} mixer layer, which is a function containing
-                 PennyLane operations. The default is RX gates on each qubit.
+                 PennyLane operations. The default is built-in RX layer.
 	   \item A \textit{recommended} initialization circuit, which is also a function 
                  containg PennyLane operations. Generally, this will either be an 
    		 even superposition over all bitstrings, or an even superposition over all 
@@ -211,12 +232,17 @@ The second option is to have something like this:
 
     \end{minted}
 
+\noindent
+This allows for the user to easily define the variational QAOA
+circuit with one line of code, but without as much customizability as the former 
+option.
+
 \subsubsection{Post-processing}
 
 The final step of any QAOA workflow is post-processing of the 
 data, after determining the parameters that yield the optimal 
 probability distribution of bitstrings. The goal of the QAOA is 
-to find the bitstring that optimizes the cost function.
+to find the bitstring that optimizes the cost function, thus, 
 
 \subsection{Conclusion}
 
