@@ -1,0 +1,189 @@
+\documentclass{article}
+\usepackage{inputenc, geometry, hyperref, amsmath, biblatex, amsfonts, minted}
+\geometry{tmargin=.75in, bmargin=.75in, lmargin=.85in, rmargin = .85in}
+
+\usemintedstyle{monokai}
+\addbibresource{ref.bib}
+
+\begin{document}
+
+\section{Add QAOA Functionality to PennyLane}
+
+\subsection{Status}
+
+2020-07-01: Proposed
+
+\subsection{Context}
+
+Ever since the introduction of the Quantum Approximate Optimization Algorithm (QAOA) 
+by Farhi, Gutmann and Goldstone in 2014, extensive research 
+has been done on the possibility of using it as a robust variational algorithm that can 
+achieve quantum supremacy on NISQ devices. As 
+a result, researchers are interested in performing calculations and simulations of different 
+QAOA experiments on classical computers.
+\newline\newline
+\noindent
+This ADR was written by Jack Ceroni, with extensive assistance from Juan Miguel Arrazola.
+
+\subsection{Background}
+
+The QAOA is a variational quantum algorithm for solving combinatorial problems. More specifically, 
+if we are given a cost function of the form
+
+\subsection{Analysis}
+
+There are four main components that are necessary to defining a QAOA workflow:
+
+\begin{enumerate}
+	\item Defining a diagonal cost Hamiltonian
+	\item Allowing the user to define a mixer layer
+	\item Creating a cost layer and combining it with the mixer and pre-processing 
+	      to create a variational circuiit
+      	\item Post-processing of results 
+\end{enumerate}
+
+\subsubsection{Cost Hamiltonians}
+
+The first step in performing QAOA involves the user defining a cost Hamiltonian that 
+they wish to minimize. This can be done in two ways:
+
+\begin{enumerate}
+	\item The user passes a custom Hamiltonian matrix into the workflow.
+	\item The user chooses from one of the built-in cost Hamiltonians, which 
+              correspond to well-known optimization problems. To begin, we propose 
+   	      that the following cost Hamiltonians be implemented:
+	      \begin{itemize}
+		      \item MaxCut (for a user-defined graph)
+		      \item QUBO (for a user-defined Ising model)
+		\end{itemize}
+\end{enumerate}
+   
+   After the core functionality has been built, more built-in cost Hamiltonians 
+   corresponding to other common optimization problems can be added.
+
+\subsubsection{Mixer Layers}
+
+The user must also have the ability to specify
+
+\subsubsection{Code Structure}
+
+In terms of code structure, the QAOA module will have a general class which can 
+be used to define an optimization problem. Each of the cost Hamiltonians will 
+be instances of this "Problem" class with the following attributes:
+
+   \begin{itemize}
+
+	   \item The matrix form of the cost Hamiltonian
+	   \item The cost layer. With knowledge of the cost Hamiltonian, the cost 
+   		 layer can be constructed.
+	   \item A \textit{recommended} mixer layer, which is a function containing
+                 PennyLane operations. The default is RX gates on each qubit.
+	   \item A \textit{recommended} initialization circuit, which is also a function 
+                 containg PennyLane operations. Generally, this will either be an 
+   		 even superposition over all bitstrings, or an even superposition over all 
+   		 bitstrings satisfying a certain constraint (for example, Hamming weight 1).
+   		 The default value is an even superposition.
+   \end{itemize}
+
+\noindent
+\textbf{Note:} The user isn't required to use either the recommended mixer, nor the
+initialization circuit, they are merely suggestions as to what works best 
+for each built-in problem
+\newline\newline
+\noindent
+The custom cost Hamiltonian will also be defined as an instance of the of
+this general problem class, with the default values for the mixer and initialization 
+attributes. To define the cost layer, the cost Hamiltonian will be decomposed 
+into a linear combination of Pauli-Z gates. Since the Pauli gates form an orthogonal
+basis of the vector space of linear transformations, we will have a unique decomposition
+of our Hamiltonian $H_C$ in terms of $Z$ gates. In fact, we will have:
+
+$$H_C \ = \ \displaystyle\sum_{n} c_n Z_1^{n_1} \otimes Z_2^{n_2} \otimes \ ... \ \otimes Z_{k}^{n_k}$$
+
+\noindent
+with $n_j \in \{0, \ 1\}$. It follows that:
+
+$$c_n \ = \ \text{Tr}( H_C Z_1^{n_1} \otimes Z_2^{n_2} \otimes \ ... \ \otimes Z_{k}^{n_k})$$
+
+\noindent
+This means that with knowledge of $H_C$, its full decomposition in terms of powers 
+of $Z$ gates can be calculated. Since each term of the Hamiltonian commutes, we 
+will have as the cost unitary:
+
+$$U_C \ = \ \displaystyle\prod_{n} e^{- i \gamma c_n Z_1^{n_1} \otimes Z_2^{n_2} \otimes \ ... \ \otimes Z_{k}^{n_k}}$$
+
+\noindent
+Each exponentiated $Z$ in this unitary can be implemented as a MultiRZ gate in
+PennyLane, and is thus differentiable.
+
+\subsubsection{Defining the QAOA Circuit}
+
+There are two possible ways the QAOA circuit can be defined, after 
+defining the cost and mixer layers.
+\newline\newline
+\noindent
+The first option is to have the user take their cost and mixer layers, along 
+with some kind of qubit initialization, and pass it into a circuit 
+like this:
+
+\begin{minted}
+        [
+    frame=lines,
+    framesep=2mm,
+    baselinestretch=1.2,
+    bgcolor=black,
+    fontsize=\footnotesize,
+    ]
+    {python}
+    
+    import pennylane as qml
+    from pennylane import qaoa
+    
+    qubits = range(4)
+    dev = qml.device("default.qubit", wires=len(qubits))
+    
+    # Defines the graph and the cost Hamiltonian for MaxCut
+    
+    graph = [(0, 1), (1, 2), (2, 3), (3, 0)]
+    maxcut = qaoa.problems.maxcut(graph=graph)
+    
+    # Defines the unitaries, the circuit and the cost function
+    
+    initialization = maxcut.init
+    cost_layer = maxcut.cost
+    mixer_layer = maxcut.mixer
+
+    qaoa_circuit = qaoa.circuit(cost_layer, mixer_layer, depth=3)
+    
+    def circuit(params):
+    	
+	initialization()
+        qaoa_circuit(params)
+        
+        return qml.expval(qml.Hermitian(maxcut.hamiltonian, wires=qubits))
+    
+    # Defines the cost function
+    
+    cost_function = qml.QNode(circuit, dev)
+
+   \end{minted}
+
+\noindent
+The benefit of this method is that it allows for more 
+flexibility in what goes on inside the variational circuit and
+the value that is returned after execution. It does, however, place 
+more of a burden on the user to code out the whole variational circuit 
+themself.
+
+\subsubsection{Post-processing}
+
+The final step of any QAOA workflow is post-processing of the 
+data, after determining the parameters that yield the optimal 
+probability distribution of bitstrings. The goal of the QAOA is 
+to find the bitstring that optimizes the cost function.
+
+\subsection{Conclusion}
+
+\printbibliography
+
+\end{document}
