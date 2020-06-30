@@ -2,7 +2,6 @@
 \usepackage{inputenc, geometry, hyperref, amsmath, biblatex, amsfonts, minted}
 \geometry{tmargin=.75in, bmargin=.75in, lmargin=.85in, rmargin = .85in}
 
-\usemintedstyle{monokai}
 \addbibresource{ref.bib}
 
 \begin{document}
@@ -131,7 +130,7 @@ like this:
     frame=lines,
     framesep=2mm,
     baselinestretch=1.2,
-    bgcolor=black,
+    bgcolor=white,
     fontsize=\footnotesize,
     ]
     {python}
@@ -174,6 +173,43 @@ flexibility in what goes on inside the variational circuit and
 the value that is returned after execution. It does, however, place 
 more of a burden on the user to code out the whole variational circuit 
 themself.
+\newline\newline
+\noindent
+The second option is to have something like this:
+
+\begin{minted}
+        [
+    frame=lines,
+    framesep=2mm,
+    baselinestretch=1.2,
+    bgcolor=white,
+    fontsize=\footnotesize,
+    ]
+    {python}
+    
+    import pennylane as qml
+    from pennylane import qaoa
+    
+    qubits = range(4)
+    dev = qml.device("default.qubit", wires=len(qubits))
+    
+    # Defines the graph and the cost Hamiltonian for MaxCut
+    
+    graph = [(0, 1), (1, 2), (2, 3), (3, 0)]
+    maxcut = qaoa.problems.maxcut(graph=graph)
+    
+    # Defines the unitaries, the circuit and the cost function
+    
+    mixer_layer = maxcut.mixer
+    init_layer = maxcut.init
+    
+    qaoa_circuit = qaoa.circuit(maxcut, mixer_layer, init_layer, depth=3, output="expval")
+    
+    # Defines the cost function
+    
+    cost_function = qml.QNode(qaoa_circuit, dev)
+
+    \end{minted}
 
 \subsubsection{Post-processing}
 

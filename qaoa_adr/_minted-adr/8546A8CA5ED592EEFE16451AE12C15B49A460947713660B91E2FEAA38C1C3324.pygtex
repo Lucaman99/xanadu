@@ -1,0 +1,23 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+    \PYG{k+kn}{import} \PYG{n+nn}{pennylane} \PYG{k+kn}{as} \PYG{n+nn}{qml}
+    \PYG{k+kn}{from} \PYG{n+nn}{pennylane} \PYG{k+kn}{import} \PYG{n}{qaoa}
+
+    \PYG{n}{qubits} \PYG{o}{=} \PYG{n+nb}{range}\PYG{p}{(}\PYG{l+m+mi}{4}\PYG{p}{)}
+    \PYG{n}{dev} \PYG{o}{=} \PYG{n}{qml}\PYG{o}{.}\PYG{n}{device}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}default.qubit\PYGZdq{}}\PYG{p}{,} \PYG{n}{wires}\PYG{o}{=}\PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{qubits}\PYG{p}{))}
+
+    \PYG{c+c1}{\PYGZsh{} Defines the graph and the cost Hamiltonian for MaxCut}
+
+    \PYG{n}{graph} \PYG{o}{=} \PYG{p}{[(}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{l+m+mi}{1}\PYG{p}{),} \PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,} \PYG{l+m+mi}{2}\PYG{p}{),} \PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{,} \PYG{l+m+mi}{3}\PYG{p}{),} \PYG{p}{(}\PYG{l+m+mi}{3}\PYG{p}{,} \PYG{l+m+mi}{0}\PYG{p}{)]}
+    \PYG{n}{maxcut} \PYG{o}{=} \PYG{n}{qaoa}\PYG{o}{.}\PYG{n}{problems}\PYG{o}{.}\PYG{n}{maxcut}\PYG{p}{(}\PYG{n}{graph}\PYG{o}{=}\PYG{n}{graph}\PYG{p}{)}
+
+    \PYG{c+c1}{\PYGZsh{} Defines the unitaries, the circuit and the cost function}
+
+    \PYG{n}{mixer\PYGZus{}layer} \PYG{o}{=} \PYG{n}{maxcut}\PYG{o}{.}\PYG{n}{mixer}
+    \PYG{n}{init\PYGZus{}layer} \PYG{o}{=} \PYG{n}{maxcut}\PYG{o}{.}\PYG{n}{init}
+
+    \PYG{n}{qaoa\PYGZus{}circuit} \PYG{o}{=} \PYG{n}{qaoa}\PYG{o}{.}\PYG{n}{circuit}\PYG{p}{(}\PYG{n}{maxcut}\PYG{p}{,} \PYG{n}{mixer\PYGZus{}layer}\PYG{p}{,} \PYG{n}{init\PYGZus{}layer}\PYG{p}{,} \PYG{n}{depth}\PYG{o}{=}\PYG{l+m+mi}{3}\PYG{p}{,} \PYG{n}{output}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}expval\PYGZdq{}}\PYG{p}{)}
+
+    \PYG{c+c1}{\PYGZsh{} Defines the cost function}
+
+    \PYG{n}{cost\PYGZus{}function} \PYG{o}{=} \PYG{n}{qml}\PYG{o}{.}\PYG{n}{QNode}\PYG{p}{(}\PYG{n}{qaoa\PYGZus{}circuit}\PYG{p}{,} \PYG{n}{dev}\PYG{p}{)}
+\end{Verbatim}
