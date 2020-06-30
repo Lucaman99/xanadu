@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2018.4.16)  30 JUN 2020 16:59
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2018.4.16)  30 JUN 2020 17:56
 entering extended mode
  \write18 enabled.
  %&-line parsing enabled.
@@ -754,16 +754,21 @@ Underfull \hbox (badness 10000) in paragraph at lines 191--200
 
 
 (./_minted-adr/8546A8CA5ED592EEFE16451AE12C15B49A460947713660B91E2FEAA38C1C3324
-.pygtex) [3]
+.pygtex)
+Underfull \hbox (badness 10000) in paragraph at lines 242--252
 
-LaTeX Warning: Empty bibliography on input line 249.
+ []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 251.
+[3]
+
+LaTeX Warning: Empty bibliography on input line 267.
+
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 269.
 [4]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 251.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 269.
  (./adr.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 251.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 251.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 269.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 269.
 Package rerunfilecheck Info: File `adr.out' has not changed.
 (rerunfilecheck)             Checksum: E137E0B4DA83E414D9C70BEB3989B457;736.
 runsystem(rm adr.pyg)...executed.
@@ -771,7 +776,7 @@ runsystem(rm adr.pyg)...executed.
 Package logreq Info: Writing requests to 'adr.run.xml'.
 \openout1 = `adr.run.xml'.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 251.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 269.
  ) 
 Here is how much of TeX's memory you used:
  15138 strings out of 492649
@@ -795,7 +800,7 @@ xlive/2018/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/tex
 live/2018/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texli
 ve/2018/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texliv
 e/2018/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt8.pfb>
-Output written on adr.pdf (4 pages, 150180 bytes).
+Output written on adr.pdf (4 pages, 150860 bytes).
 PDF statistics:
  137 PDF objects out of 1000 (max. 8388607)
  115 compressed objects within 2 object streams

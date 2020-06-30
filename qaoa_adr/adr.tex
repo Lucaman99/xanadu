@@ -242,7 +242,25 @@ option.
 The final step of any QAOA workflow is post-processing of the 
 data, after determining the parameters that yield the optimal 
 probability distribution of bitstrings. The goal of the QAOA is 
-to find the bitstring that optimizes the cost function, thus, 
+to find the bitstring that optimizes the cost function, thus, we 
+introduce functionality that can determine this value, as well as 
+other properties of the outputted data.
+\newline\newline
+\noindent
+Within the core functionality of the PennyLane QAOA module, 
+there are two post-processing functions that we propose:
+
+\begin{itemize}
+	\item A function that samples from the variational QAOA circuit, for 
+		a given set of parameters. This allows the user to sample from the 
+		circuit many times, and infer things like the most commonly occurring 
+		bitstring, the average value of the cost function, the standard deviation 
+		of samples, etc.
+	\item A function that returns the probability of measuring a given bitstring after executing 
+		a given circuit. This would allow the users to validate that their QAOA experiment is working
+		as expected, by ensuring that the bitstrings that correspond to optimal values of the cost 
+		function occurr with high probability.
+\end{itemize}
 
 \subsection{Conclusion}
 
