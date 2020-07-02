@@ -297,6 +297,11 @@ circuit with a couple lines of code, but without as much customizability as the 
 option.
 \newline\newline
 \noindent
+\textbf{Note:} The reason that we choose to keep the cost function separate from the 
+QAOA circuit in this option is due to the fact that the QAOA circuit (not necessarily 
+the cost function) is usually needed for post-processing.
+\newline\newline
+\noindent
 \textbf{Conclusion:} The second option would probably be best for users. In the case that 
 someone wanted as much freedom and customizability as the first option provides, they 
 may as well code the QAOA circuit completely manually, without the help of the module. 

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2018.4.16)  2 JUL 2020 12:50
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2018.4.16)  2 JUL 2020 13:21
 entering extended mode
  \write18 enabled.
  %&-line parsing enabled.
@@ -797,12 +797,17 @@ Underfull \hbox (badness 10000) in paragraph at lines 250--259
 
 (./_minted-adr/17B3FD8D455782B129862A45A01689249A460947713660B91E2FEAA38C1C3324
 .pygtex)
-Underfull \hbox (badness 10000) in paragraph at lines 294--305
+Underfull \hbox (badness 10000) in paragraph at lines 294--310
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 308--318
+Underfull \hbox (badness 10000) in paragraph at lines 294--310
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 313--323
 
  []
 
@@ -813,36 +818,27 @@ Underfull \hbox (badness 10000) in paragraph at lines 308--318
 (./_minted-adr/8AE4935B1224B386161A81D0D41186D49A460947713660B91E2FEAA38C1C3324
 .pygtex) [5]
 
-LaTeX Warning: Empty bibliography on input line 421.
+LaTeX Warning: Empty bibliography on input line 426.
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 423.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 428.
 [6]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 423.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 428.
  (./adr.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 423.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 423.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 428.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 428.
 Package rerunfilecheck Info: File `adr.out' has not changed.
 (rerunfilecheck)             Checksum: D3CF869286DB24F405BDE05813116EFA;729.
-
-
-LaTeX Warning: There were undefined references.
-
-
-Package biblatex Warning: Please (re)run Biber on the file:
-(biblatex)                adr
-(biblatex)                and rerun LaTeX afterwards.
-
 runsystem(rm adr.pyg)...executed.
 
 Package logreq Info: Writing requests to 'adr.run.xml'.
 \openout1 = `adr.run.xml'.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 423.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 428.
  ) 
 Here is how much of TeX's memory you used:
  15147 strings out of 492649
  262701 string characters out of 6129622
- 757849 words of memory out of 5000000
+ 757811 words of memory out of 5000000
  18845 multiletter control sequences out of 15000+600000
  7838 words of font info for 31 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
@@ -861,7 +857,7 @@ xlive/2018/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/tex
 live/2018/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texli
 ve/2018/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local/texliv
 e/2018/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt8.pfb>
-Output written on adr.pdf (6 pages, 168877 bytes).
+Output written on adr.pdf (6 pages, 169055 bytes).
 PDF statistics:
  147 PDF objects out of 1000 (max. 8388607)
  123 compressed objects within 2 object streams
