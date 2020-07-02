@@ -1,0 +1,57 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+    \PYG{k+kn}{import} \PYG{n+nn}{pennylane} \PYG{k+kn}{as} \PYG{n+nn}{qml}
+    \PYG{k+kn}{from} \PYG{n+nn}{pennylane} \PYG{k+kn}{import} \PYG{n}{qaoa}
+    \PYG{k+kn}{import} \PYG{n+nn}{math}
+
+    \PYG{n}{qubits} \PYG{o}{=} \PYG{n+nb}{range}\PYG{p}{(}\PYG{l+m+mi}{4}\PYG{p}{)}
+    \PYG{n}{dev} \PYG{o}{=} \PYG{n}{qml}\PYG{o}{.}\PYG{n}{device}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}default.qubit\PYGZdq{}}\PYG{p}{,} \PYG{n}{wires}\PYG{o}{=}\PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{qubits}\PYG{p}{))}
+
+    \PYG{c+c1}{\PYGZsh{} Defines a QUBO problem with the following structure:}
+    \PYG{c+c1}{\PYGZsh{}   Interaction terms \PYGZhy{}\PYGZhy{}\PYGZgt{} (qubit index 1, qubit index 2, weight)}
+    \PYG{c+c1}{\PYGZsh{}   Bias terms \PYGZhy{}\PYGZhy{}\PYGZgt{} (qubit index, bias)}
+
+    \PYG{n}{interaction\PYGZus{}terms} \PYG{o}{=} \PYG{p}{[(}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{l+m+mi}{1}\PYG{p}{,} \PYG{l+m+mf}{2.7}\PYG{p}{),} \PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,} \PYG{l+m+mi}{2}\PYG{p}{,} \PYG{l+m+mf}{0.43}\PYG{p}{),} \PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{,} \PYG{l+m+mi}{3}\PYG{p}{,} \PYG{l+m+mf}{1.2}\PYG{p}{),} \PYG{p}{(}\PYG{l+m+mi}{3}\PYG{p}{,} \PYG{l+m+mi}{0}\PYG{p}{,} \PYG{l+m+mf}{0.15}\PYG{p}{)]}
+    \PYG{n}{bias\PYGZus{}terms} \PYG{o}{=} \PYG{p}{[(}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{l+m+mf}{2.3}\PYG{p}{),} \PYG{p}{(}\PYG{l+m+mi}{3}\PYG{p}{,} \PYG{l+m+mf}{0.93}\PYG{p}{)]}
+
+    \PYG{n}{ising\PYGZus{}model} \PYG{o}{=} \PYG{p}{[}\PYG{n}{interaction\PYGZus{}terms}\PYG{p}{,} \PYG{n}{bias\PYGZus{}terms}\PYG{p}{]}
+
+    \PYG{n}{qubo} \PYG{o}{=} \PYG{n}{qaoa}\PYG{o}{.}\PYG{n}{problems}\PYG{o}{.}\PYG{n}{qubo}\PYG{p}{(}\PYG{n}{ising\PYGZus{}model}\PYG{o}{=}\PYG{n}{ising\PYGZus{}model}\PYG{p}{)}
+
+    \PYG{c+c1}{\PYGZsh{} Defines a custom mixer, using two built\PYGZhy{}in mixers}
+    \PYG{k}{def} \PYG{n+nf}{mixer\PYGZus{}layer}\PYG{p}{(}\PYG{n}{beta}\PYG{p}{):}
+
+	\PYG{n}{qaoa}\PYG{o}{.}\PYG{n}{mixers}\PYG{o}{.}\PYG{n}{XYLayer}\PYG{p}{(}\PYG{n}{beta}\PYG{p}{,} \PYG{n}{qubits}\PYG{p}{,} \PYG{n}{graph}\PYG{o}{=}\PYG{p}{[(}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{l+m+mi}{1}\PYG{p}{),} \PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,} \PYG{l+m+mi}{2}\PYG{p}{),} \PYG{p}{(}\PYG{l+m+mi}{2}\PYG{p}{,} \PYG{l+m+mi}{3}\PYG{p}{),} \PYG{p}{(}\PYG{l+m+mi}{3}\PYG{p}{,} \PYG{l+m+mi}{0}\PYG{p}{)])}
+	\PYG{n}{qaoa}\PYG{o}{.}\PYG{n}{mixers}\PYG{o}{.}\PYG{n}{RXLayer}\PYG{p}{(}\PYG{n}{beta}\PYG{p}{,} \PYG{n}{qubits}\PYG{p}{)}
+
+    \PYG{c+c1}{\PYGZsh{} Defines the initialization circuit}
+    \PYG{n}{init\PYGZus{}layer} \PYG{o}{=} \PYG{n}{qubo}\PYG{o}{.}\PYG{n}{init}
+
+    \PYG{c+c1}{\PYGZsh{} Defines the QAOA circuit}
+    \PYG{n}{qaoa\PYGZus{}circuit} \PYG{o}{=} \PYG{n}{qaoa}\PYG{o}{.}\PYG{n}{circuit}\PYG{p}{(}\PYG{n}{qubo}\PYG{p}{,} \PYG{n}{mixer\PYGZus{}layer}\PYG{p}{,} \PYG{n}{init\PYGZus{}layer}\PYG{p}{,} \PYG{n}{depth}\PYG{o}{=}\PYG{l+m+mi}{3}\PYG{p}{)}
+
+    \PYG{c+c1}{\PYGZsh{} Defines a sampling cost function}
+    \PYG{n}{qaoa\PYGZus{}cost} \PYG{o}{=} \PYG{n}{qaoa}\PYG{o}{.}\PYG{n}{sampling\PYGZus{}cost}\PYG{p}{(}\PYG{n}{qubo}\PYG{p}{,} \PYG{n}{qaoa\PYGZus{}circuit}\PYG{p}{,} \PYG{n}{samples}\PYG{o}{=}\PYG{l+m+mi}{200}\PYG{p}{)}
+
+    \PYG{c+c1}{\PYGZsh{} Runs the circuit}
+    \PYG{n}{steps} \PYG{o}{=} \PYG{l+m+mi}{100}
+    \PYG{n}{optimizer} \PYG{o}{=} \PYG{n}{qml}\PYG{o}{.}\PYG{n}{AdamOptimizer}\PYG{p}{()}
+    \PYG{n}{params} \PYG{o}{=} \PYG{n}{qaoa}\PYG{o}{.}\PYG{n}{uniform\PYGZus{}params}\PYG{p}{(}\PYG{n}{qaoa\PYGZus{}circuit}\PYG{p}{)}
+
+    \PYG{k}{for} \PYG{n}{i} \PYG{o+ow}{in} \PYG{n+nb}{range}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{n}{steps}\PYG{p}{):}
+    	\PYG{n}{params} \PYG{o}{=} \PYG{n}{optimizer}\PYG{o}{.}\PYG{n}{step}\PYG{p}{(}\PYG{n}{qaoa\PYGZus{}cost}\PYG{p}{,} \PYG{n}{params}\PYG{p}{)}
+
+    \PYG{c+c1}{\PYGZsh{} Finds the optimal bitstring}
+    \PYG{n}{optimal\PYGZus{}bitstring} \PYG{o}{=} \PYG{n+nb+bp}{None}
+    \PYG{n}{optimal\PYGZus{}cost} \PYG{o}{=} \PYG{n}{math}\PYG{o}{.}\PYG{n}{inf}
+    \PYG{n}{samples} \PYG{o}{=} \PYG{l+m+mi}{100}
+
+    \PYG{k}{for} \PYG{n}{i} \PYG{o+ow}{in} \PYG{n+nb}{range}\PYG{p}{(}\PYG{l+m+mi}{0}\PYG{p}{,} \PYG{n}{samples}\PYG{p}{):}
+    	\PYG{n}{sample} \PYG{o}{=} \PYG{n}{qaoa}\PYG{o}{.}\PYG{n}{sample}\PYG{p}{(}\PYG{n}{qaoa\PYGZus{}circuit}\PYG{p}{)}
+	\PYG{n}{val} \PYG{o}{=} \PYG{n}{np}\PYG{o}{.}\PYG{n}{vdot}\PYG{p}{(}\PYG{n}{sample}\PYG{p}{,} \PYG{p}{(}\PYG{n}{qubo}\PYG{o}{.}\PYG{n}{hamiltonian} \PYG{err}{@} \PYG{n}{sample}\PYG{p}{))}
+
+	\PYG{k}{if} \PYG{n}{val} \PYG{o}{\PYGZlt{}} \PYG{n}{optimal\PYGZus{}cost}\PYG{p}{:}
+	    \PYG{n}{optimal\PYGZus{}cost} \PYG{o}{=} \PYG{n}{val}
+	    \PYG{n}{optimal\PYGZus{}bitstring} \PYG{o}{=} \PYG{n}{sample}
+
+    \PYG{k}{print}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}The Optimal Bitstring is: \PYGZob{}\PYGZcb{}\PYGZdq{}}\PYG{o}{.}\PYG{n}{format}\PYG{p}{(}\PYG{n}{optimal\PYGZus{}bitstring}\PYG{p}{))}
+\end{Verbatim}

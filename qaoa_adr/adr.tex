@@ -76,6 +76,11 @@ The main goal of the QAOA module is to make it as \textbf{problem-centric} as po
 where the user can define a QAOA workflow for some optimization problem without 
 worrying too much about the exact specifics of the quantum circuits in the backend.
 
+\subsection{Location in PennyLane}
+
+We propose the creation of a new pennylane.qaoa module where all of the functionality 
+for creating QAOA workflows would be located.
+
 \subsubsection{The Cost and Mixer Layers}
 
 The main component of any QAOA procedure is the cost function that the user 
@@ -157,7 +162,12 @@ PennyLane, and is thus differentiable.
 
 \subsubsection{Further Notes on Mixer Layers}
 
-There are a wide variety of mixers that are suited to different instances of QAOA.
+There are a wide variety of mixers that are suited to different instances of QAOA. A good mixer 
+Hamiltonian should be non-commuting with the cost and constrain the search space of different bitstrings 
+to those that satisfy a certain \textit{hard-constraint} (for instance, Hamming weight 1). As a result, the correct 
+choice of a mixer can vary greatly between different QAOA optimization procedures.
+\newline\newline
+\noindent
 Since the user is not constrained to using the recommended mixer that is built-into each 
 problem instance, we must specify convenient ways for a user to utilize a variety of different 
 mixers in their QAOA workflows.
@@ -271,11 +281,11 @@ The second option is to have something like this:
     mixer_layer = maxcut.mixer
     init_layer = maxcut.init
     
-    qaoa_circuit = qaoa.circuit(maxcut, mixer_layer, init_layer, depth=3, output="expval")
+    qaoa_circuit = qaoa.circuit(maxcut, mixer_layer, init_layer, depth=3)
     
     # Defines the cost function
     
-    cost_function = qml.QNode(qaoa_circuit, dev)
+    cost_function = qaoa.sampling_cost(qaoa_circuit, samples=200)
 
     \end{minted}
 
@@ -283,6 +293,13 @@ The second option is to have something like this:
 This allows for the user to easily define the variational QAOA
 circuit with one line of code, but without as much customizability as the former 
 option.
+\newline\newline
+\noindent
+\textbf{Conclusion:} The second option would probably be best for users. In the case that 
+someone wanted as much freedom and customizability as the first option provides, they 
+may as well code the QAOA circuit completely manually, without the help of the module. 
+The second option on the other hand is still customizeable, but it allows the user 
+to define and run a circuit in far fewer lines of code, and with much greater ease.
 
 \subsubsection{Post-processing}
 
@@ -308,6 +325,84 @@ there are two post-processing functions that we propose:
 		as expected, by ensuring that the bitstrings that correspond to optimal values of the cost 
 		function occurr with high probability.
 \end{itemize}
+
+We choose to leave the post-processing functionality of the module fairly basic for the 
+first iteration of the QAOA module, 
+as a user that has some experience with Python should be able to take these two functions 
+and use them to calculate essentially anything they want.
+
+\section{User Interface}
+
+All together, a general QAOA workflow might look something like this (assuming the second 
+option for defining the QAOA circuit is chosen):
+
+\begin{minted}
+        [
+    frame=lines,
+    framesep=2mm,
+    baselinestretch=1.2,
+    bgcolor=white,
+    fontsize=\footnotesize,
+    ]
+    {python}
+    
+    import pennylane as qml
+    from pennylane import qaoa
+    import math
+    
+    qubits = range(4)
+    dev = qml.device("default.qubit", wires=len(qubits))
+    
+    # Defines a QUBO problem with the following structure:
+    #   Interaction terms --> (qubit index 1, qubit index 2, weight)
+    #   Bias terms --> (qubit index, bias)
+
+    interaction_terms = [(0, 1, 2.7), (1, 2, 0.43), (2, 3, 1.2), (3, 0, 0.15)]
+    bias_terms = [(0, 2.3), (3, 0.93)]
+
+    ising_model = [interaction_terms, bias_terms]
+
+    qubo = qaoa.problems.qubo(ising_model=ising_model)
+    
+    # Defines a custom mixer, using two built-in mixers
+    def mixer_layer(beta):
+
+	qaoa.mixers.XYLayer(beta, qubits, graph=[(0, 1), (1, 2), (2, 3), (3, 0)])
+	qaoa.mixers.RXLayer(beta, qubits)
+
+    # Defines the initialization circuit
+    init_layer = qubo.init
+
+    # Defines the QAOA circuit
+    qaoa_circuit = qaoa.circuit(qubo, mixer_layer, init_layer, depth=3)
+
+    # Defines a sampling cost function
+    qaoa_cost = qaoa.sampling_cost(qubo, qaoa_circuit, samples=200)
+
+    # Runs the circuit
+    steps = 100
+    optimizer = qml.AdamOptimizer()
+    params = qaoa.uniform_params(qaoa_circuit)
+
+    for i in range(0, steps):
+    	params = optimizer.step(qaoa_cost, params)
+
+    # Finds the optimal bitstring
+    optimal_bitstring = None
+    optimal_cost = math.inf
+    samples = 100
+
+    for i in range(0, samples):
+    	sample = qaoa.sample(qaoa_circuit)
+	val = np.vdot(sample, (qubo.hamiltonian @ sample))
+
+	if val < optimal_cost:
+	    optimal_cost = val
+	    optimal_bitstring = sample
+    
+    print("The Optimal Bitstring is: {}".format(optimal_bitstring))
+
+   \end{minted}
 
 \printbibliography
 
