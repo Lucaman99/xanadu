@@ -16,18 +16,18 @@ The Quantum Approximate Optimization Algorithm is a variational quantum algorith
 optimization problems, introduced by Farhi, Gutmann and Goldstone in 2014 [1].
 \newline\newline
 \noindent
-If we are given a cost function of the form:
+We are given a cost function of the form:
 
 \begin{equation}
 	C(z) \ = \ \displaystyle\sum_{n} C_n(z)
 \end{equation}
 \noindent
 where $z$ is some bitstring, and each $C_n(z)$ is a \textit{clause}, which is a function that maps 
-each bitstring to either $0$ or $1$. Our goal is to minimize this cost function, by finding the 
+each bitstring to either $0$ or $1$. Our goal is to minimize this cost function by finding the 
 bitstring(s) that returns the lowest value.
 \newline\newline
 \noindent
-QAOA is able to solve this problem by taking a variational approach. We first map the cost function 
+To solve this problem with QAOA, we first map the cost function 
 to a diagonal cost Hamiltonian. We then use a parametrized quantum circuit to repeatedly prepare ansatz states, 
 measuring the expectation value of the cost Hamiltonian with respect to this state. This process is repeated with 
 new parameters, chosen by a classical optimizer, until the algorithm converges on the state that yields the lowest 
@@ -36,8 +36,8 @@ find the optimal bitstring(s), thus solving the optimization problem.
 \newline\newline
 \noindent
 In QAOA, the ansatz state is prepared in a unique way. Beginning with some initial state, $|\psi_0\rangle$ (usually an 
-even superposition over all basis states), we evolve this state to get $|\psi(\gamma, \alpha)\rangle$ with the 
-alternating unitary evolution, similarly to a Trotterized version of adiabatic quantum evolution:
+even superposition over all basis states), we evolve this state to get $|\psi(\gamma, \alpha)\rangle$ with an 
+"alternating operator" ansatz, similar to a Trotterized version of adiabatic quantum evolution:
 
 $$|\psi(\gamma, \alpha)\rangle \ = \ e^{-i \alpha_P H_M} e^{-i \gamma_P H_C} \ ... \  e^{-i \alpha_2 H_M} e^{-i \gamma_2 H_C}  e^{-i \alpha_1 H_M} e^{-i \gamma_1 H_C} |\psi_0\rangle$$
 \noindent
@@ -65,7 +65,7 @@ There are four main components that are necessary to defining a QAOA workflow:
 \begin{enumerate}
 	\item Specifying the optimization problem
 	\item Allowing the user to define a mixer layer
-	\item Creating a cost layer and combining it with the mixer and pre-processing 
+	\item Creating a cost layer and combining it with the mixer and an initialization circuit 
 	      to create a variational circuit
       	\item Post-processing of results 
 \end{enumerate}
@@ -112,17 +112,18 @@ be instances of this "Problem" class with the following attributes:
 	   \item The cost layer. With knowledge of the cost Hamiltonian, the cost 
    		 layer can be constructed. In theory, it is possible to simply 
 		 take the cost Hamiltonian and decompose it into a linear combination of 
-		 $Z$ gates, however, this process would lengthen the runtime of the simulation. 
+		 $Z$ gates, thus eliminating the need for the cost layer to be a pre-defined attribute. 
+		 However, this process can greatly lengthen the runtime of the simulation. 
 		 Thus, when defining new, built-in cost function that have an already well-know 
 		 quantum circuit implementation (for instance, MaxCut), there is an option to specify the circuit
 		 directly.
 	   \item A \textit{recommended} mixer layer, which is a function containing
-                 PennyLane operations. The default is built-in RX layer.
+                 PennyLane operations. The default is simple RX layer used in the original QAOA paper.
 	   \item A \textit{recommended} initialization circuit, which is also a function 
                  containg PennyLane operations. Generally, this will either be an 
    		 even superposition over all bitstrings, or an even superposition over all 
    		 bitstrings satisfying a certain constraint (for example, Hamming weight 1).
-   		 The default value is an even superposition.
+   		 The default value is a method creating an even superposition.
    \end{itemize}
 
 \noindent
@@ -136,10 +137,9 @@ this general problem class, with the default values for the mixer and initializa
 attributes. 
 \newline\newline
 \noindent
-There are also cases to consider where the circuit decomposition of the cost layer corresponding to some cost 
-Hamiltonian is unknown (for example, when the user passes in their own custom Hamiltonian
-). Thus, we must write a subroutine that performs the decomposition for us. We begin by expressing the cost Hamiltonian 
-as a linear combination of Pauli-Z gates. Since the Pauli gates form an orthogonal
+This is also one of the cases where the circuit decomposition of the cost layer corresponding to a cost 
+Hamiltonian is unknown. Thus, we must write a subroutine decomposes anc arbitrary diagonal Hamiltonian into a sum 
+of Pauli-Z gates. Since the Pauli gates form an orthogonal
 basis of the vector space of linear transformations, we will have a unique decomposition
 of our Hamiltonian $H_C$ in terms of $Z$ gates. In fact, we will have:
 
@@ -163,10 +163,10 @@ PennyLane, and is thus differentiable.
 
 \subsubsection{Further Notes on Mixer Layers}
 
-There are a wide variety of mixers that are suited to different instances of QAOA. A good mixer 
+There are a wide variety of mixers that can be used for QAOA. A good mixer 
 Hamiltonian should be non-commuting with the cost and constrain the search space of different bitstrings 
 to those that satisfy a certain \textit{hard-constraint} (for instance, Hamming weight 1). As a result, the correct 
-choice of a mixer can vary greatly between different QAOA optimization procedures.
+choice of a mixer can vary greatly between different QAOA workflows.
 \newline\newline
 \noindent
 Since the user is not constrained to using the recommended mixer that is built-into each 
@@ -176,11 +176,11 @@ mixers in their QAOA workflows.
 \noindent
 Similar to defining a cost Hamiltonian, we let the user either: 
 \begin{itemize}
-	\item Define their own function, 
+	\item Define their own method 
 	      containing PennyLane operations, which 
 	      can be used as the mixer layer. 
 	\item Choose from a variety of built-in mixers.
-              To begin, we propose the following mixers \textbf{unitaries} are implemented:
+              To begin, we propose the following mixer layers are implemented:
 
 		\begin{itemize}
 			\item The $RX$ mixer
@@ -191,13 +191,14 @@ Similar to defining a cost Hamiltonian, we let the user either:
 \end{itemize}
 \noindent
 \textbf{Note:} Each of the recommended mixers in each problem instance will simply be a call 
-to one of the built-in mixers defined above, with the default being the $RX$ mixer.
+to one of the built-in mixers defined above, with the default for all problem instances
+being the $RX$ mixer.
 
 
 \subsubsection{Defining the QAOA Circuit}
 
-With all of the necessary peices of the simulation defined, it must be combined 
-to create a variational QAOA circuit. We see two possible ways to do this.
+With all of the necessary peices of the QAOA defined, they must be combined 
+to create a variational QAOA circuit. We outline two possible ways to do this.
 \newline\newline
 \noindent
 The first option is to have the user take their cost and mixer layers, along 
@@ -292,7 +293,7 @@ The second option is to have something like this:
 
 \noindent
 This allows for the user to easily define the variational QAOA
-circuit with one line of code, but without as much customizability as the former 
+circuit with a couple lines of code, but without as much customizability as the former 
 option.
 \newline\newline
 \noindent
@@ -305,10 +306,10 @@ to define and run a circuit in far fewer lines of code, and with much greater ea
 \subsubsection{Post-processing}
 
 The final step of any QAOA workflow is post-processing of the 
-data, after determining the parameters that yield the optimal 
+data after determining the parameters that yield the optimal 
 probability distribution of bitstrings. The goal of the QAOA is 
-to find the bitstring that optimizes the cost function, thus, we 
-introduce functionality that can determine this value, as well as 
+to find the bitstring that optimizes the cost function. Thus, we 
+introduce functionality that can be used to determine this value, as well as 
 other properties of the outputted data.
 \newline\newline
 \noindent
@@ -322,7 +323,8 @@ there are two post-processing functions that we propose:
 		bitstring, the average value of the cost function, the standard deviation 
 		of samples, etc.
 	\item A function that returns the probability of measuring a given bitstring after executing 
-		a given circuit. This would allow the users to validate that their QAOA experiment is working
+		a given QAOA circuit for some collection of parameters. This would allow the users to validate 
+		that their QAOA experiment is working
 		as expected, by ensuring that the bitstrings that correspond to optimal values of the cost 
 		function occurr with high probability.
 \end{itemize}
@@ -338,7 +340,7 @@ There are a few other features that the QAOA library should likely include that 
 any of the previous categories:
 
 \begin{itemize}
-	\item Add functions that initialize $\alpha$ and $\gamma$ parameters from normal and uniform distributions, 
+	\item Functions that initialize $\alpha$ and $\gamma$ parameters from normal and uniform distributions, 
 		for a given circuit.
 \end{itemize}
 
@@ -360,6 +362,7 @@ option for defining the QAOA circuit is chosen):
     import pennylane as qml
     from pennylane import qaoa
     import math
+    import numpy as np
     
     qubits = range(4)
     dev = qml.device("default.qubit", wires=len(qubits))

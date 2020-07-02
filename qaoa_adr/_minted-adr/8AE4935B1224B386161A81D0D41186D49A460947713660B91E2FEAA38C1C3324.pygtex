@@ -2,6 +2,7 @@
     \PYG{k+kn}{import} \PYG{n+nn}{pennylane} \PYG{k+kn}{as} \PYG{n+nn}{qml}
     \PYG{k+kn}{from} \PYG{n+nn}{pennylane} \PYG{k+kn}{import} \PYG{n}{qaoa}
     \PYG{k+kn}{import} \PYG{n+nn}{math}
+    \PYG{k+kn}{import} \PYG{n+nn}{numpy} \PYG{k+kn}{as} \PYG{n+nn}{np}
 
     \PYG{n}{qubits} \PYG{o}{=} \PYG{n+nb}{range}\PYG{p}{(}\PYG{l+m+mi}{4}\PYG{p}{)}
     \PYG{n}{dev} \PYG{o}{=} \PYG{n}{qml}\PYG{o}{.}\PYG{n}{device}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}default.qubit\PYGZdq{}}\PYG{p}{,} \PYG{n}{wires}\PYG{o}{=}\PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{qubits}\PYG{p}{))}
