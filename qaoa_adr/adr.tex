@@ -10,28 +10,60 @@
 
 \subsection{Status}
 
-2020-07-01: Proposed
-
 \subsection{Context}
 
-Ever since the introduction of the Quantum Approximate Optimization Algorithm (QAOA) 
-by Farhi, Gutmann and Goldstone in 2014, extensive research 
+The Quantum Approximate Optimization Algorithm is a variational quantum algorithm for solving combinatorial 
+optimization problems, introduced by Farhi, Gutmann and Goldstone in 2014 [1].
+\newline\newline
+\noindent
+If we are given a cost function of the form:
+
+\begin{equation}
+	C(z) \ = \ \displaystyle\sum_{n} C_n(z)
+\end{equation}
+\noindent
+where $z$ is some bitstring, and each $C_n(z)$ is a \textit{clause}, which is a function that maps 
+each bitstring to either $0$ or $1$. Our goal is to minimize this cost function, by finding the 
+bitstring(s) that returns the lowest value.
+\newline\newline
+\noindent
+QAOA is able to solve this problem by taking a variational approach. We first map the cost function 
+to a diagonal cost Hamiltonian. We then use a parametrized quantum circuit to repeatedly prepare ansatz states, 
+measuring the expectation value of the cost Hamiltonian with respect to this state. This process is repeated with 
+new parameters, chosen by a classical optimizer, until the algorithm converges on the state that yields the lowest 
+energy expectation value. This yields a set of optimal parameters, which are used to execute the circuit many times to 
+find the optimal bitstring(s), thus solving the optimization problem.
+\newline\newline
+\noindent
+In QAOA, the ansatz state is prepared in a unique way. Beginning with some initial state, $|\psi_0\rangle$ (usually an 
+even superposition over all basis states), we evolve this state to get $|\psi(\gamma, \alpha)\rangle$ with the 
+alternating unitary evolution, similarly to a Trotterized version of adiabatic quantum evolution:
+
+$$|\psi(\gamma, \alpha)\rangle \ = \ e^{-i \alpha_P H_M} e^{-i \gamma_P H_C} \ ... \  e^{-i \alpha_2 H_M} e^{-i \gamma_2 H_C}  e^{-i \alpha_1 H_M} e^{-i \gamma_1 H_C} |\psi_0\rangle$$
+\noindent
+where $H_C$ is the cost Hamiltonian that we are attemtping to minimize, and $H_M$ is a non-commuting mixer Hamiltonian.
+\newline\newline
+\noindent
+The cost function is then defined to be $F(\gamma, \alpha) \ = \ \langle \psi(\gamma, \alpha) | H_C | \psi (\gamma, \alpha) \rangle$, which 
+we minimize, as was described above.
+\newline\newline
+\noindent
+QAOA has the potential to generate approximate solutions to many well-known and important optimization problems 
+such as QUBO, Max-k-SAT, Machine Scheduling, and more. The possibility of interesting applications, combined 
+with a variational ansatz that is relatively easy to implement, compared to other instances of VQE, makes QAOA 
+a very attractive candidate for implementation on NISQ devices. Extensive research 
 has been done on the possibility of using it as a robust variational algorithm that can 
-achieve quantum supremacy on NISQ devices. As 
-a result, researchers are interested in performing calculations and simulations of different 
+achieve quantum supremacy on near-term quantum computers and as 
+a result, researchers are interested in performing calculations, simulations, and benchmarking of different 
 QAOA experiments on classical computers.
 
-\subsection{Background}
-
-The QAOA is a variational quantum algorithm for solving combinatorial problems. More specifically, 
-if we are given a cost function of the form
 
 \subsection{Analysis}
 
 There are four main components that are necessary to defining a QAOA workflow:
 
 \begin{enumerate}
-	\item Defining a diagonal cost Hamiltonian
+	\item Specifying the optimization problem
 	\item Allowing the user to define a mixer layer
 	\item Creating a cost layer and combining it with the mixer and pre-processing 
 	      to create a variational circuit
@@ -40,62 +72,44 @@ There are four main components that are necessary to defining a QAOA workflow:
 \noindent
 This ADR will disucss each in detail.
 \newline\newline
-The main goal of the QAOA module is to make it as \textbf{problem-centric} as possible. 
-We want for the user to be able to enter some combinatorial problem into PennyLane, and 
-in return, get the answer without worrying too much about the specifics of the quantum 
-circuits that are being executed in the backend.
+The main goal of the QAOA module is to make it as \textbf{problem-centric} as possible, 
+where the user can define a QAOA workflow for some optimization problem without 
+worrying too much about the exact specifics of the quantum circuits in the backend.
 
-\subsubsection{Cost Hamiltonians}
+\subsubsection{The Cost and Mixer Layers}
 
-The first step in performing QAOA involves the user defining a cost Hamiltonian that 
-they wish to minimize. This can be done in two ways:
+The main component of any QAOA procedure is the cost function that the user 
+wants to optimize. In the PennyLane QAOA module, we propose two ways that a user 
+can go about choosing an optimization problem to solve:
 
 \begin{enumerate}
-	\item The user passes a custom Hamiltonian matrix into the workflow.
+	\item The user passes a custom cost Hamiltonian matrix into the workflow.
 	\item The user chooses from one of the built-in cost Hamiltonians, which 
               correspond to well-known optimization problems. To begin, we propose 
-   	      that the following cost Hamiltonians be implemented:
+   	      that the following optimization problems be implemented:
 	      \begin{itemize}
 		      \item MaxCut (for a user-defined graph)
 		      \item QUBO (for a user-defined Ising model)
 		\end{itemize}
 \end{enumerate}
   \noindent 
-   After the core functionality has been built, more built-in cost Hamiltonians 
-   corresponding to other common optimization problems can be added.
-
-\subsubsection{Mixer Layers}
-
-The user must also have the ability to specify a mixer Hamiltonian to be used 
-in the QAOA workflow.
+   After the core functionality has been built, more common optimization problems can be added 
+   to the library.
 \newline\newline
 \noindent
-Mixers could be defined in a similar way to the QAOA problem instances.
-The user can either define their own function, containing PennyLane operations, which 
-can be used as the mixer layer, or they can choose from a variety of built-in mixers.
-To begin, we propose the following mixers \textbf{unitaries} are implemented:
-
-\begin{itemize}
-	\item The $RX$ mixer
-	\item The $XY$ mixer
-	\item The Hamming weight-preserving generalized SWAP mixer, defined as:
-		$$\exp \Big[ - \frac{\beta}{2} (X_{i} X_{j} \ + \ Y_{i} Y_{j}) \Big]$$
-\end{itemize}
-
-With these unitaries defined, \textbf{broadcasted} to the circuit 
-using the PennyLane broadcast function.
-
-\subsubsection{Code Structure}
-
-In terms of code structure, the QAOA module will have a general class which can 
-be used to define an optimization problem. Each of the cost Hamiltonians will 
+Each of these optimization problems will
 be instances of this "Problem" class with the following attributes:
 
    \begin{itemize}
 
 	   \item The matrix form of the cost Hamiltonian
 	   \item The cost layer. With knowledge of the cost Hamiltonian, the cost 
-   		 layer can be constructed.
+   		 layer can be constructed. In theory, it is possible to simply 
+		 take the cost Hamiltonian and decompose it into a linear combination of 
+		 $Z$ gates, however, this process would lengthen the runtime of the simulation. 
+		 Thus, when defining new, built-in cost function that have an already well-know 
+		 quantum circuit implementation (for instance, MaxCut), there is an option to specify the circuit
+		 directly.
 	   \item A \textit{recommended} mixer layer, which is a function containing
                  PennyLane operations. The default is built-in RX layer.
 	   \item A \textit{recommended} initialization circuit, which is also a function 
@@ -111,10 +125,15 @@ initialization circuit, they are merely suggestions as to what works best
 for each built-in problem
 \newline\newline
 \noindent
-The custom cost Hamiltonian will also be defined as an instance of the of
+\textbf{Note:} The custom cost Hamiltonian will also be defined as an instance of the of
 this general problem class, with the default values for the mixer and initialization 
-attributes. To define the cost layer, the cost Hamiltonian will be decomposed 
-into a linear combination of Pauli-Z gates. Since the Pauli gates form an orthogonal
+attributes. 
+\newline\newline
+\noindent
+There are also cases to consider where the circuit decomposition of the cost layer corresponding to some cost 
+Hamiltonian is unknown (for example, when the user passes in their own custom Hamiltonian
+). Thus, we must write a subroutine that performs the decomposition for us. We begin by expressing the cost Hamiltonian 
+as a linear combination of Pauli-Z gates. Since the Pauli gates form an orthogonal
 basis of the vector space of linear transformations, we will have a unique decomposition
 of our Hamiltonian $H_C$ in terms of $Z$ gates. In fact, we will have:
 
@@ -136,10 +155,38 @@ $$U_C \ = \ \displaystyle\prod_{n} e^{- i \gamma c_n Z_1^{n_1} \otimes Z_2^{n_2}
 Each exponentiated $Z$ in this unitary can be implemented as a MultiRZ gate in
 PennyLane, and is thus differentiable.
 
+\subsubsection{Further Notes on Mixer Layers}
+
+There are a wide variety of mixers that are suited to different instances of QAOA.
+Since the user is not constrained to using the recommended mixer that is built-into each 
+problem instance, we must specify convenient ways for a user to utilize a variety of different 
+mixers in their QAOA workflows.
+\newline\newline
+\noindent
+Similar to defining a cost Hamiltonian, we let the user either: 
+\begin{itemize}
+	\item Define their own function, 
+	      containing PennyLane operations, which 
+	      can be used as the mixer layer. 
+	\item Choose from a variety of built-in mixers.
+              To begin, we propose the following mixers \textbf{unitaries} are implemented:
+
+		\begin{itemize}
+			\item The $RX$ mixer
+			\item The $XY$ mixer
+			\item The Hamming weight-preserving generalized SWAP mixer, defined as:
+				$$\exp \Big[ - \frac{\beta}{2} (X_{i} X_{j} \ + \ Y_{i} Y_{j}) \Big]$$
+		\end{itemize}
+\end{itemize}
+\noindent
+\textbf{Note:} Each of the recommended mixers in each problem instance will simply be a call 
+to one of the built-in mixers defined above, with the default being the $RX$ mixer.
+
+
 \subsubsection{Defining the QAOA Circuit}
 
-There are two possible ways the QAOA circuit can be defined, after 
-defining the cost and mixer layers.
+With all of the necessary peices of the simulation defined, it must be combined 
+to create a variational QAOA circuit. We see two possible ways to do this.
 \newline\newline
 \noindent
 The first option is to have the user take their cost and mixer layers, along 
@@ -261,8 +308,6 @@ there are two post-processing functions that we propose:
 		as expected, by ensuring that the bitstrings that correspond to optimal values of the cost 
 		function occurr with high probability.
 \end{itemize}
-
-\subsection{Conclusion}
 
 \printbibliography
 
