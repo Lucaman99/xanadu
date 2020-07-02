@@ -70,7 +70,8 @@ There are four main components that are necessary to defining a QAOA workflow:
       	\item Post-processing of results 
 \end{enumerate}
 \noindent
-This ADR will disucss each in detail.
+The objective of this ADR will disucss each in detail, and outline how they will be implemented in 
+a PennyLane QAOA module.
 \newline\newline
 The main goal of the QAOA module is to make it as \textbf{problem-centric} as possible, 
 where the user can define a QAOA workflow for some optimization problem without 
@@ -330,6 +331,16 @@ We choose to leave the post-processing functionality of the module fairly basic 
 first iteration of the QAOA module, 
 as a user that has some experience with Python should be able to take these two functions 
 and use them to calculate essentially anything they want.
+
+\section{Other}
+
+There are a few other features that the QAOA library should likely include that don't fall into 
+any of the previous categories:
+
+\begin{itemize}
+	\item Add functions that initialize $\alpha$ and $\gamma$ parameters from normal and uniform distributions, 
+		for a given circuit.
+\end{itemize}
 
 \section{User Interface}
 
