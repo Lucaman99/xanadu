@@ -16,7 +16,7 @@ The Quantum Approximate Optimization Algorithm is a variational quantum algorith
 optimization problems, introduced by Farhi, Gutmann and Goldstone in 2014 [1].
 \newline\newline
 \noindent
-We are given a cost function of the form:
+To begin, we consider a cost function of the form:
 
 \begin{equation}
 	C(z) \ = \ \displaystyle\sum_{n} C_n(z)
@@ -24,99 +24,98 @@ We are given a cost function of the form:
 \noindent
 where $z$ is some bitstring, and each $C_n(z)$ is a \textit{clause}, which is a function that maps 
 each bitstring to either $0$ or $1$. Our goal is to minimize this cost function by finding the 
-bitstring(s) that returns the lowest value.
+optimal bitstring(s) that return the lowest value.
 \newline\newline
 \noindent
 To solve this problem with QAOA, we first map the cost function 
-to a diagonal cost Hamiltonian. We then use a parametrized quantum circuit to repeatedly prepare ansatz states, 
-measuring the expectation value of the cost Hamiltonian with respect to this state. This process is repeated with 
-new parameters, chosen by a classical optimizer, until the algorithm converges on the state that yields the lowest 
-energy expectation value. This yields a set of optimal parameters, which are used to execute the circuit many times to 
-find the optimal bitstring(s), thus solving the optimization problem.
+to a diagonal cost Hamiltonian, where the expectated energy with respect to 
+each basis state is its corresponding cost function value when expressed as a bitstring 
+(for instance, $|000\rangle$ corresponds to the bitstring $000$).
 \newline\newline
 \noindent
-In QAOA, the ansatz state is prepared in a unique way. Beginning with some initial state, $|\psi_0\rangle$ (usually an 
+Next, we use a variational ansatz to prepare a parametrized quantum state.
+Beginning with some initial state, $|\psi_0\rangle$ (usually an 
 even superposition over all basis states), we evolve this state to get $|\psi(\gamma, \alpha)\rangle$ with an 
-"alternating operator" ansatz, similar to a Trotterized version of adiabatic quantum evolution:
+"alternating operator ansatz", similar to a Trotterized version of adiabatic quantum evolution:
 
-$$|\psi(\gamma, \alpha)\rangle \ = \ e^{-i \alpha_P H_M} e^{-i \gamma_P H_C} \ ... \  e^{-i \alpha_2 H_M} e^{-i \gamma_2 H_C}  e^{-i \alpha_1 H_M} e^{-i \gamma_1 H_C} |\psi_0\rangle$$
+$$|\psi(\gamma, \alpha)\rangle \ = \ \displaystyle\prod_{n \ = \ 1}^{P} e^{-i \alpha_n H_M} e^{-i \gamma_n H_C} |\psi_0\rangle$$
 \noindent
 where $H_C$ is the cost Hamiltonian that we are attemtping to minimize, and $H_M$ is a non-commuting mixer Hamiltonian.
 \newline\newline
 \noindent
-The cost function is then defined to be $F(\gamma, \alpha) \ = \ \langle \psi(\gamma, \alpha) | H_C | \psi (\gamma, \alpha) \rangle$, which 
-we minimize, as was described above.
+Upon execution of this circuit, we calculate the quantity $F(\gamma, \alpha) \ = \ \langle \psi(\gamma, \alpha) | H_C | \psi (\gamma, \alpha) \rangle$.
+We repeat this process many times, minimizing the value of $F(\gamma, \alpha)$.
+This in turn minimizes the cost function and
+gives us an optimal circuit that produces the optimal bitstring with high probability.
+Finally, the optimal circuit is executed multiple times and the resulting bitstring that 
+yields the lowest value of the cost function is outputted.
 \newline\newline
 \noindent
 QAOA has the potential to generate approximate solutions to many well-known and important optimization problems 
 such as QUBO, Max-k-SAT, Machine Scheduling, and more. The possibility of interesting applications, combined 
 with a variational ansatz that is relatively easy to implement, compared to other instances of VQE, makes QAOA 
-a very attractive candidate for implementation on NISQ devices. Extensive research 
-has been done on the possibility of using it as a robust variational algorithm that can 
-achieve quantum supremacy on near-term quantum computers and as 
-a result, researchers are interested in performing calculations, simulations, and benchmarking of different 
-QAOA experiments on classical computers.
+a very attractive candidate for implementation on NISQ devices, and possibly even a demonstration of quantum supremacy.
+\newline\newline
+\noindent 
+In recent years, quantum researchers have become increasingly
+interested in performing benchmarking and simulations of different versions of QAOA on classical computers [2-4], making the 
+addition of a QAOA module to PennyLane a potentiallly valuable tool for this kind of work. In addition, QAOA has received a lot 
+of attention from the community of quantum enthusiasts. A PennyLane QAOA module would be a fantastic learning resource
+for many people trying to learn more about variational quantum algorithms, and may serve to attract more people to the entire PennyLane library.
 
 
 \subsection{Analysis}
 
-There are four main components that are necessary to defining a QAOA workflow:
+There are wour six components that are necessary to defining a QAOA workflow:
 
 \begin{enumerate}
 	\item Specifying the optimization problem
+	\item Allowing the user to define a state initialization circuit
 	\item Allowing the user to define a mixer layer
-	\item Creating a cost layer and combining it with the mixer and an initialization circuit 
+	\item Creating a cost layer from the chosen optimization problem and combining it with the mixer and an initialization circuit 
 	      to create a variational circuit
-      	\item Post-processing of results 
+      	\item Optimization of the variational circuit
+	\item Post-processing
 \end{enumerate}
 \noindent
 The objective of this ADR will disucss each in detail, and outline how they will be implemented in 
 a PennyLane QAOA module.
 \newline\newline
-The main goal of the QAOA module is to make it as \textbf{problem-centric} as possible, 
-where the user can define a QAOA workflow for some optimization problem without 
+The QAOA module should be as \textbf{problem-centric} as possible. This means that 
+the user should be able to define a QAOA workflow for some optimization problem without 
 worrying too much about the exact specifics of the quantum circuits in the backend.
 
 \subsection{Location in PennyLane}
 
-We propose the creation of a new pennylane.qaoa module where all of the functionality 
+We propose the creation of a new QAOA module where all of the functionality 
 for creating QAOA workflows would be located.
 
-\subsubsection{The Cost and Mixer Layers}
+\subsection{Specification of the Optimization Problem}
 
 The main component of any QAOA procedure is the cost function that the user 
-wants to optimize. In the PennyLane QAOA module, we propose two ways that a user 
-can go about choosing an optimization problem to solve:
+chooses to optimize. In the QAOA module, we propose that the user have 
+access to a variety of built-in QAOA problem instances.
+To start, we suggest that the following optimization problems be implemented:
 
-\begin{enumerate}
-	\item The user passes a custom cost Hamiltonian matrix into the workflow.
-	\item The user chooses from one of the built-in cost Hamiltonians, which 
-              correspond to well-known optimization problems. To begin, we propose 
-   	      that the following optimization problems be implemented:
-	      \begin{itemize}
-		      \item MaxCut (for a user-defined graph)
-		      \item QUBO (for a user-defined Ising model)
-		\end{itemize}
-\end{enumerate}
-  \noindent 
-   After the core functionality has been built, more common optimization problems can be added 
-   to the library.
+ \begin{itemize}
+	 \item MaxCut (for a user-defined graph)
+	 \item QUBO (for a user-defined Ising model)
+\end{itemize}
+
+After the core functionality has been built, more common optimization problems can be added 
+to the library.
 \newline\newline
 \noindent
-Each of these optimization problems will
+Each of these built-in optimization problems will
 be instances of this "Problem" class with the following attributes:
 
    \begin{itemize}
 
-	   \item The matrix form of the cost Hamiltonian
-	   \item The cost layer. With knowledge of the cost Hamiltonian, the cost 
-   		 layer can be constructed. In theory, it is possible to simply 
-		 take the cost Hamiltonian and decompose it into a linear combination of 
-		 $Z$ gates, thus eliminating the need for the cost layer to be a pre-defined attribute. 
-		 However, this process can greatly lengthen the runtime of the simulation. 
-		 Thus, when defining new, built-in cost function that have an already well-know 
-		 quantum circuit implementation (for instance, MaxCut), there is an option to specify the circuit
-		 directly.
+	   \item The cost Hamiltonian, implemented as an instance of the pennylane Hamiltonian
+		  class.
+	   \item The cost layer, which can be constructed by simply exponentiating each term of the cost 
+		   Hamiltonian. Converting the cost Hamiltonian into a differentiable cost unitary is thus 
+		   very straightforward, and does not require any complicated decomposition.
 	   \item A \textit{recommended} mixer layer, which is a function containing
                  PennyLane operations. The default is simple RX layer used in the original QAOA paper.
 	   \item A \textit{recommended} initialization circuit, which is also a function 
@@ -127,39 +126,19 @@ be instances of this "Problem" class with the following attributes:
    \end{itemize}
 
 \noindent
+Consider an example of a built-in problem instance: MaxCut. The cost Hamiltonian will be defined as:
+
+\begin{equation}
+	H_C \ = \ \displaystyle\sum_{(i, j) \in E(G)} \frac{1}{2} \big(1 \ - \ Z_i Z_j \big)
+\end{equation}
+
+for a user inputted graph $G$. Thus, the cost Hamiltonian attribute of 
+
+
+\noindent
 \textbf{Note:} The user isn't required to use either the recommended mixer, nor the
 initialization circuit, they are merely suggestions as to what works best 
 for each built-in problem
-\newline\newline
-\noindent
-\textbf{Note:} The custom cost Hamiltonian will also be defined as an instance of the of
-this general problem class, with the default values for the mixer and initialization 
-attributes. 
-\newline\newline
-\noindent
-This is also one of the cases where the circuit decomposition of the cost layer corresponding to a cost 
-Hamiltonian is unknown. Thus, we must write a subroutine decomposes anc arbitrary diagonal Hamiltonian into a sum 
-of Pauli-Z gates. Since the Pauli gates form an orthogonal
-basis of the vector space of linear transformations, we will have a unique decomposition
-of our Hamiltonian $H_C$ in terms of $Z$ gates. In fact, we will have:
-
-$$H_C \ = \ \displaystyle\sum_{n} c_n Z_1^{n_1} \otimes Z_2^{n_2} \otimes \ ... \ \otimes Z_{k}^{n_k}$$
-
-\noindent
-with $n_j \in \{0, \ 1\}$. It follows that:
-
-$$c_n \ = \ \text{Tr}( H_C Z_1^{n_1} \otimes Z_2^{n_2} \otimes \ ... \ \otimes Z_{k}^{n_k})$$
-
-\noindent
-This means that with knowledge of $H_C$, its full decomposition in terms of powers 
-of $Z$ gates can be calculated. Since each term of the Hamiltonian commutes, we 
-will have as the cost unitary:
-
-$$U_C \ = \ \displaystyle\prod_{n} e^{- i \gamma c_n Z_1^{n_1} \otimes Z_2^{n_2} \otimes \ ... \ \otimes Z_{k}^{n_k}}$$
-
-\noindent
-Each exponentiated $Z$ in this unitary can be implemented as a MultiRZ gate in
-PennyLane, and is thus differentiable.
 
 \subsubsection{Further Notes on Mixer Layers}
 
