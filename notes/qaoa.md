@@ -49,8 +49,7 @@ Notes/outline for a new PennyLane QAOA tutorial, incorporating the new PennyLane
 
   dev = qml.device('default.qubit', wires=9)
 
-  @qml.qnode(dev)
-  def qaoa_ansatz(params):
+  def qaoa_ansatz(params, **kwargs):
 
       gamma = params[0]
       alpha = params[1]
